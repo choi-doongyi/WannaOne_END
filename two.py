@@ -128,7 +128,7 @@ for start in range(0, len(LOT_NO), lots_per_page):
     fig, axes = plt.subplots(
         nrows=lots_per_page,
         ncols=2,
-        figsize=(18, 8),
+        figsize=(12, 6),
         sharex=False,
         sharey=False,
     )
@@ -196,4 +196,90 @@ for start in range(0, len(LOT_NO), lots_per_page):
 
     plt.tight_layout()
     plt.show()
-## 유독 가열존 1존이 2~4존에 비해 온도 변동이 심하고 제어출력도 높다. 공정상 자연스러운 결과일 수 있다
+### 유독 가열존 1존이 2~4존에 비해 온도 변동이 심하고 제어출력도 높다. 공정상 자연스러운 결과일 수 있다
+
+
+# z-score 임계값
+z_threshold = 3
+
+# 1존은 별도 판별
+zone1_cols = ["TC-Z3", "OP-Z3"]
+
+# 2~4존은 별도 그룹으로 판별
+zone_2_4_cols = ["TC-Z4", "TC-Z5", "TC-Z6", "OP-Z4", "OP-Z5", "OP-Z6"]
+
+
+def add_zscore_outlier_flags(df, cols, threshold=3, suffix=""):
+    result = df.copy()
+
+    for col in cols:
+        mean = result[col].mean(skipna=True)
+        std = result[col].std(skipna=True)
+
+        z_col = f"{col}_zscore{suffix}"
+        flag_col = f"{col}_outlier{suffix}"
+
+        if std == 0 or pd.isna(std):
+            result[z_col] = np.nan
+            result[flag_col] = False
+        else:
+            result[z_col] = (result[col] - mean) / std
+            result[flag_col] = result[z_col].abs() >= threshold
+
+    return result
+
+
+# 전체 데이터 기준 z-score
+df_temp_z = df_temp.copy()
+
+df_temp_z = add_zscore_outlier_flags(
+    df_temp_z,
+    cols=zone1_cols,
+    threshold=z_threshold,
+    suffix="_zone1",
+)
+
+df_temp_z = add_zscore_outlier_flags(
+    df_temp_z,
+    cols=zone_2_4_cols,
+    threshold=z_threshold,
+    suffix="_zone2_4",
+)
+
+# 이상치 플래그 컬럼 목록
+zone1_flag_cols = [f"{col}_outlier_zone1" for col in zone1_cols]
+zone_2_4_flag_cols = [f"{col}_outlier_zone2_4" for col in zone_2_4_cols]
+
+# 1존 이상치 여부
+df_temp_z["zone1_any_outlier"] = df_temp_z[zone1_flag_cols].any(axis=1)
+
+# 2~4존 이상치 여부
+df_temp_z["zone2_4_any_outlier"] = df_temp_z[zone_2_4_flag_cols].any(axis=1)
+
+# 전체 이상치 여부
+df_temp_z["heating_any_outlier"] = (
+    df_temp_z["zone1_any_outlier"] | df_temp_z["zone2_4_any_outlier"]
+)
+
+# 이상치 행만 확인
+outliers = df_temp_z[df_temp_z["heating_any_outlier"]]
+
+print("전체 이상치 행 수:", len(outliers))
+print("1존 이상치 행 수:", df_temp_z["zone1_any_outlier"].sum())
+print("2~4존 이상치 행 수:", df_temp_z["zone2_4_any_outlier"].sum())
+
+outliers[
+    [
+        "LOT_NO",
+        "TC-Z3",
+        "OP-Z3",
+        "TC-Z4",
+        "TC-Z5",
+        "TC-Z6",
+        "OP-Z4",
+        "OP-Z5",
+        "OP-Z6",
+        "zone1_any_outlier",
+        "zone2_4_any_outlier",
+    ]
+].head()
