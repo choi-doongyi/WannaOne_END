@@ -96,133 +96,104 @@ print(df_temp["LOT_NO"].value_counts())
 LOT_NO = df_temp["LOT_NO"].unique()
 
 
-#### 온도 데이터 로트번호로 나눈 그래프
+#### 온도 데이터셋을 로트번호로 나눈 그래프
 
-# 가열·균열존 컬럼만 선택
-heating_cols = ["TC-Z3", "TC-Z4", "TC-Z5", "TC-Z6"]
+# 가열·균열존 온도 컬럼
+heating_temp_cols = ["TC-Z3", "TC-Z4", "TC-Z5", "TC-Z6"]
 
-colors = {
-    "TC-Z3": "tab:red",
-    "TC-Z4": "tab:orange",
-    "TC-Z5": "tab:purple",
-    "TC-Z6": "tab:brown",
+# 가열·균열존 제어출력 컬럼
+heating_op_cols = ["OP-Z3", "OP-Z4", "OP-Z5", "OP-Z6"]
+
+zone_colors = {
+    "Z3": "tab:red",
+    "Z4": "tab:orange",
+    "Z5": "tab:purple",
+    "Z6": "tab:brown",
 }
 
-linestyles = {
-    "TC-Z3": "-",
-    "TC-Z4": "--",
-    "TC-Z5": ":",
-    "TC-Z6": "-.",
+zone_linestyles = {
+    "Z3": "-",
+    "Z4": "--",
+    "Z5": ":",
+    "Z6": "-.",
 }
 
 LOT_NO = sorted(LOT_NO)
 
-plots_per_page = 4
+lots_per_page = 2  # 로트 2개 x 그래프 2개 = 한 화면 4개 subplot
 
-for start in range(0, len(LOT_NO), plots_per_page):
-    lot_batch = LOT_NO[start : start + plots_per_page]
+for start in range(0, len(LOT_NO), lots_per_page):
+    lot_batch = LOT_NO[start : start + lots_per_page]
 
     fig, axes = plt.subplots(
-        nrows=2,
+        nrows=lots_per_page,
         ncols=2,
-        figsize=(18, 10),
+        figsize=(18, 8),
         sharex=False,
         sharey=False,
     )
 
-    axes = axes.flatten()
+    axes = np.array(axes).reshape(lots_per_page, 2)
 
-    for ax, lot_no in zip(axes, lot_batch):
+    for row_idx, lot_no in enumerate(lot_batch):
         g = df_temp[df_temp["LOT_NO"] == lot_no]
 
-        for col in heating_cols:
-            ax.plot(
+        ax_temp = axes[row_idx, 0]
+        ax_op = axes[row_idx, 1]
+
+        # 왼쪽: 온도 그래프
+        for col in heating_temp_cols:
+            zone = col.split("-")[-1]
+
+            ax_temp.plot(
                 g.index,
                 g[col],
-                color=colors[col],
-                linestyle=linestyles[col],
+                color=zone_colors[zone],
+                linestyle=zone_linestyles[zone],
                 linewidth=0.9,
-                alpha=0.8,
+                alpha=0.85,
                 label=col,
             )
 
-        ax.set_title(f"LOT_NO: {lot_no}")
-        ax.set_xlabel("Time")
-        ax.set_ylabel("Temperature (℃)")
-        ax.grid(True, alpha=0.3)
-        ax.legend(fontsize=8, ncol=4)
+        ax_temp.set_title(f"LOT_NO: {lot_no} | 가열·균열존 온도")
+        ax_temp.set_xlabel("Time")
+        ax_temp.set_ylabel("Temperature (℃)")
+        ax_temp.grid(True, alpha=0.3)
+        ax_temp.legend(fontsize=8, ncol=4)
 
-    # 마지막 페이지에서 남는 subplot 제거
-    for ax in axes[len(lot_batch) :]:
-        ax.remove()
+        # 오른쪽: 제어출력 그래프
+        for col in heating_op_cols:
+            zone = col.split("-")[-1]
+
+            ax_op.plot(
+                g.index,
+                g[col],
+                color=zone_colors[zone],
+                linestyle=zone_linestyles[zone],
+                linewidth=0.9,
+                alpha=0.85,
+                label=col,
+            )
+
+        ax_op.set_title(f"LOT_NO: {lot_no} | 가열·균열존 제어출력")
+        ax_op.set_xlabel("Time")
+        ax_op.set_ylabel("Control Output (%)")
+        ax_op.set_ylim(0, 100)
+        ax_op.grid(True, alpha=0.3)
+        ax_op.legend(fontsize=8, ncol=4)
+
+    # 마지막 페이지에서 로트가 1개만 남는 경우 빈 row 제거
+    if len(lot_batch) < lots_per_page:
+        for row_idx in range(len(lot_batch), lots_per_page):
+            axes[row_idx, 0].remove()
+            axes[row_idx, 1].remove()
 
     plt.suptitle(
-        f"LOT_NO별 가열·균열존 온도 추이 ({start + 1}~{start + len(lot_batch)} / {len(LOT_NO)})",
+        f"LOT_NO별 가열·균열존 온도 / 제어출력 추이 "
+        f"({start + 1}~{start + len(lot_batch)} / {len(LOT_NO)})",
         fontsize=15,
     )
 
     plt.tight_layout()
     plt.show()
-
-
-# 건조존 컬럼만 선택
-drying_cols = ["TC-Z1", "TC-Z2"]
-
-colors = {
-    "TC-Z1": "tab:orange",
-    "TC-Z2": "tab:green",
-}
-
-linestyles = {
-    "TC-Z1": "-",
-    "TC-Z2": "--",
-}
-
-LOT_NO = sorted(LOT_NO)
-
-plots_per_page = 4
-
-for start in range(0, len(LOT_NO), plots_per_page):
-    lot_batch = LOT_NO[start : start + plots_per_page]
-
-    fig, axes = plt.subplots(
-        nrows=2,
-        ncols=2,
-        figsize=(18, 10),
-        sharex=False,
-        sharey=False,
-    )
-
-    axes = axes.flatten()
-
-    for ax, lot_no in zip(axes, lot_batch):
-        g = df_temp[df_temp["LOT_NO"] == lot_no]
-
-        for col in drying_cols:
-            ax.plot(
-                g.index,
-                g[col],
-                color=colors[col],
-                linestyle=linestyles[col],
-                linewidth=0.9,
-                alpha=0.8,
-                label=col,
-            )
-
-        ax.set_title(f"LOT_NO: {lot_no}")
-        ax.set_xlabel("Time")
-        ax.set_ylabel("Temperature (℃)")
-        ax.grid(True, alpha=0.3)
-        ax.legend(fontsize=8, ncol=2)
-
-    # 마지막 페이지에서 남는 subplot 제거
-    for ax in axes[len(lot_batch) :]:
-        ax.remove()
-
-    plt.suptitle(
-        f"LOT_NO별 건조존 온도 추이 ({start + 1}~{start + len(lot_batch)} / {len(LOT_NO)})",
-        fontsize=15,
-    )
-
-    plt.tight_layout()
-    plt.show()
+## 유독 가열존 1존이 2~4존에 비해 온도 변동이 심하고 제어출력도 높다. 공정상 자연스러운 결과일 수 있다
