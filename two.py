@@ -66,5 +66,16 @@ for name, df in datasets.items():
         df.info()
     print("=========================================")
 ## 문자열 MEAS_DT 컬럼을 시간 인덱스로 정렬함
-df_temp["MEAS_DT"] = pd.to_datetime(df_temp["MEAS_DT"])
+df_temp["MEAS_DT"] = pd.to_datetime(df_temp["MEAS_DT"])  # 소결로 온도 1초 간격
 df_temp = df_temp.set_index("MEAS_DT").sort_index()
+df_welding["MEAS_DT"] = pd.to_datetime(df_welding["MEAS_DT"])  # 상공정 용접 3초 간격
+df_welding = df_welding.set_index("MEAS_DT").sort_index()
+df_event["EVT_DT"] = pd.to_datetime(
+    df_event["EVT_DT"]
+)  # 조업 이벤트 간격이 일정하지 않음
+df_event = df_event.set_index("EVT_DT").sort_index()
+df_repair["DETC_DT"] = pd.to_datetime(
+    df_repair["DETC_DT"]
+)  # 정비이력 간격이 일정하지 않음
+df_repair = df_repair.set_index("DETC_DT").sort_index()  # 정기점검 기간도 포함
+##
