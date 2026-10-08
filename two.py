@@ -196,6 +196,7 @@ for start in range(0, len(LOT_NO), lots_per_page):
 
     plt.tight_layout()
     plt.show()
+
 ### 유독 가열존 1존이 2~4존에 비해 온도 변동이 심하고 제어출력도 높다. 공정상 자연스러운 결과일 수 있다
 
 
@@ -283,3 +284,163 @@ outliers[
         "zone2_4_any_outlier",
     ]
 ].head()
+### Name: count, dtype: int64
+# 전체 이상치 행 수: 24429
+# 1존 이상치 행 수: 19181
+# 2~4존 이상치 행 수: 13592     각 로트별 공정에서의 온도 그래프 형태가 달라 전체 이상치를 판단하는것은 부적합해 보임
+
+
+### 온도 데이터의 로트번호에 정비이력에 나온 강종을 대입하여 그래프를 다시 그림
+# 1. CR1 강종변경 이벤트만 추출
+grade_event = (
+    df_event.reset_index()
+    .query("PLANT_CD == 'CR1' and EVT_TYPE == '강종변경'")[
+        ["EVT_DT", "BEF_VAL", "AFT_VAL"]
+    ]
+    .sort_values("EVT_DT")
+)
+
+# 2. df_temp를 시간 컬럼 형태로 임시 변환
+temp_tmp = df_temp.reset_index().sort_values("MEAS_DT")
+
+# 3. 각 온도 측정시각 기준으로 가장 가까운 직전 강종변경 이벤트를 붙임
+temp_tmp = pd.merge_asof(
+    temp_tmp,
+    grade_event,
+    left_on="MEAS_DT",
+    right_on="EVT_DT",
+    direction="backward",
+)
+
+# 4. 변경 이후 강종인 AFT_VAL을 VAL 컬럼으로 사용
+temp_tmp["VAL"] = temp_tmp["AFT_VAL"]
+
+# 5. 다시 MEAS_DT 인덱스로 복원
+df_temp = temp_tmp.set_index("MEAS_DT").sort_index()
+
+# 확인
+print(df_temp[["LOT_NO", "EVT_DT", "BEF_VAL", "AFT_VAL", "VAL"]].value_counts())
+
+
+print(df_temp.head(3), df_temp.tail(3))
+
+
+lot_val_check = df_temp.groupby("LOT_NO")["VAL"].agg(
+    row_count="size",
+    val_nunique=lambda s: s.nunique(dropna=False),
+    vals=lambda s: sorted(s.dropna().unique()),
+    null_count=lambda s: s.isna().sum(),
+)
+
+print(lot_val_check)
+
+mixed_lots = lot_val_check[lot_val_check["val_nunique"] > 1]
+print("VAL이 2개 이상인 LOT_NO 개수:", len(mixed_lots))
+print(mixed_lots)
+
+
+# 가열·균열존 온도 컬럼
+heating_temp_cols = ["TC-Z3", "TC-Z4", "TC-Z5", "TC-Z6"]
+
+# 가열·균열존 제어출력 컬럼
+heating_op_cols = ["OP-Z3", "OP-Z4", "OP-Z5", "OP-Z6"]
+
+zone_colors = {
+    "Z3": "tab:red",
+    "Z4": "tab:orange",
+    "Z5": "tab:purple",
+    "Z6": "tab:brown",
+}
+
+zone_linestyles = {
+    "Z3": "-",
+    "Z4": "--",
+    "Z5": ":",
+    "Z6": "-.",
+}
+
+LOT_NO = sorted(LOT_NO)
+
+lots_per_page = 2  # 로트 2개 x 그래프 2개 = 한 화면 4개 subplot
+
+for start in range(0, len(LOT_NO), lots_per_page):
+    lot_batch = LOT_NO[start : start + lots_per_page]
+
+    fig, axes = plt.subplots(
+        nrows=lots_per_page,
+        ncols=2,
+        figsize=(12, 6),
+        sharex=False,
+        sharey=False,
+    )
+
+    axes = np.array(axes).reshape(lots_per_page, 2)
+
+    for row_idx, lot_no in enumerate(lot_batch):
+        g = df_temp[df_temp["LOT_NO"] == lot_no]
+
+        # 해당 LOT_NO의 강종 VAL
+        val = g["VAL"].dropna().unique()
+        val_text = val[0] if len(val) > 0 else "Unknown"
+
+        ax_temp = axes[row_idx, 0]
+        ax_op = axes[row_idx, 1]
+
+        # 왼쪽: 온도 그래프
+        for col in heating_temp_cols:
+            zone = col.split("-")[-1]
+
+            ax_temp.plot(
+                g.index,
+                g[col],
+                color=zone_colors[zone],
+                linestyle=zone_linestyles[zone],
+                linewidth=0.9,
+                alpha=0.85,
+                label=col,
+            )
+
+        ax_temp.set_title(f"LOT_NO: {lot_no} / VAL: {val_text} | 가열·균열존 온도")
+        ax_temp.set_xlabel("Time")
+        ax_temp.set_ylabel("Temperature (℃)")
+        ax_temp.grid(True, alpha=0.3)
+        ax_temp.legend(fontsize=8, ncol=4)
+
+        # 오른쪽: 제어출력 그래프
+        for col in heating_op_cols:
+            zone = col.split("-")[-1]
+
+            ax_op.plot(
+                g.index,
+                g[col],
+                color=zone_colors[zone],
+                linestyle=zone_linestyles[zone],
+                linewidth=0.9,
+                alpha=0.85,
+                label=col,
+            )
+
+        ax_op.set_title(f"LOT_NO: {lot_no} / VAL: {val_text} | 가열·균열존 제어출력")
+        ax_op.set_xlabel("Time")
+        ax_op.set_ylabel("Control Output (%)")
+        ax_op.set_ylim(0, 100)
+        ax_op.grid(True, alpha=0.3)
+        ax_op.legend(fontsize=8, ncol=4)
+
+    # 마지막 페이지에서 로트가 1개만 남는 경우 빈 row 제거
+    if len(lot_batch) < lots_per_page:
+        for row_idx in range(len(lot_batch), lots_per_page):
+            axes[row_idx, 0].remove()
+            axes[row_idx, 1].remove()
+
+    plt.suptitle(
+        f"LOT_NO별 가열·균열존 온도 / 제어출력 추이 "
+        f"({start + 1}~{start + len(lot_batch)} / {len(LOT_NO)})",
+        fontsize=15,
+    )
+
+    plt.tight_layout()
+    plt.show()
+### 로트번호가 동일하면 하나의 강종만 해당하는것으로 보아 이력데이터와 시간대는 문제가 없어 보이지만
+### 예상과 다르게 같은 강종이더라도 온도그래프의 형태가 달라 온도 그래프 형태로 강종을 구분하는것은 부적합해보임
+### 온도 그래프는 강종이 아닌 공정같은 요인의 작용일 수 있음
