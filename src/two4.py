@@ -136,10 +136,10 @@ print("ROC-AUC:", roc_auc_score(y_valid, risk_score))
 from sklearn.metrics import f1_score
 
 # --------------------------------------------------
-# 5. 임계값 0 ~ 1을 0.01 간격으로 비교
+# 5. 비용에 따른 임계값 0 ~ 1을 0.01 간격으로 비교
 # --------------------------------------------------
-FN_COST = int(input("FN 코스트 입력: "))
-FP_COST = int(input("FP 코스트 입력: "))
+FN_COST = int(input("고장발생시 비용 입력: "))
+FP_COST = int(input("헛정비 비용 입력: "))
 
 results = []
 
