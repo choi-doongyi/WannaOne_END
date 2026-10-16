@@ -1,0 +1,77 @@
+{
+  "train_scenarios": 216,
+  "normal_scenarios": 155,
+  "failure_scenarios": 49,
+  "failure_events": 51,
+  "hourly_rows": 15103,
+  "raw_rows": 11197440,
+  "stopped_rows": 349892,
+  "missing_mld_rows": 648,
+  "quality_missing_rows": 648,
+  "uncensored_24h_labels": 1919,
+  "positive_24h_labels": 217,
+  "reference_load": 0.7798584722222223,
+  "load_slopes": {
+    "OSC_STK": 0.1498465921241545,
+    "CONTROL_DELAY": 0.03409123344853498
+  },
+  "score_parameters": {
+    "MLD_AMP_D": {
+      "direction": 1,
+      "mean": 0.013160687370154241,
+      "std": 0.03281034140416464
+    },
+    "CONTROL_DELAY_D": {
+      "direction": 1,
+      "mean": 0.0022748278755967003,
+      "std": 0.005793329654592915
+    },
+    "WDL_C_D": {
+      "direction": 1,
+      "mean": 0.4697224065746738,
+      "std": 2.0921404201680818
+    },
+    "OSC_STK_D": {
+      "direction": -1,
+      "mean": 0.007458436640549826,
+      "std": 0.043078783010919774
+    }
+  },
+  "signal_comparison": {
+    "MLD_AMP_D": {
+      "normal_hours": 10814,
+      "pre_failure_hours": 532,
+      "normal_median": 0.012029946925663726,
+      "pre_failure_median": 0.3835220456156425,
+      "eda_auc": 0.9280026865758813
+    },
+    "CONTROL_DELAY_D": {
+      "normal_hours": 10814,
+      "pre_failure_hours": 532,
+      "normal_median": 0.0010637378242199513,
+      "pre_failure_median": 0.026951250412316455,
+      "eda_auc": 0.9223256958746042
+    },
+    "WDL_C_D": {
+      "normal_hours": 10814,
+      "pre_failure_hours": 532,
+      "normal_median": 0.22543016505587588,
+      "pre_failure_median": 5.977672427160364,
+      "eda_auc": 0.8538108842477936
+    },
+    "OSC_STK_D": {
+      "normal_hours": 10814,
+      "pre_failure_hours": 532,
+      "normal_median": 0.007221974108998497,
+      "pre_failure_median": 0.11085957997510221,
+      "eda_auc": 0.8395952893144643
+    },
+    "SCORE": {
+      "normal_hours": 10814,
+      "pre_failure_hours": 532,
+      "normal_median": -0.0582099061858192,
+      "pre_failure_median": 6.225525585287862,
+      "eda_auc": 0.9272715958566659
+    }
+  }
+}
