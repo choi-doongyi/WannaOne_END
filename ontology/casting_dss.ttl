@@ -1,0 +1,177 @@
+@prefix cc:   <https://github.com/choi-doongyi/WannaOne_END/ontology#> .
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+
+# 연주 설비 정비 의사결정 지원 온톨로지 (스키마, TBox)
+# 설계: 결과보고서 8-2절 (객체·링크·액션, 설계 기록 부록 D-1). 인스턴스(ABox)는 src/ontology.py가 화면 데이터로 만든다.
+# "신호 → 부품" 링크는 일부러 두지 않는다: 센서로는 5초 원자료로도 고장 부품을 구분하지 못했다(결과보고서 부록 A E9).
+
+<https://github.com/choi-doongyi/WannaOne_END/ontology> a owl:Ontology ;
+    rdfs:label "연주 설비 정비 의사결정 지원 온톨로지"@ko ;
+    owl:versionInfo "0.1" ;
+    rdfs:comment "POSKO 합성 예측정비 데이터 pdm-v2.2.0, 설비 P1-CC1-INS01. 교육용."@ko .
+
+# ── 객체 (클래스) ─────────────────────────────────────────────
+
+cc:Equipment a owl:Class ; rdfs:label "설비"@ko ;
+    rdfs:comment "연주 설비 P1-CC1-INS01의 한 운전 시나리오. 시나리오마다 따로 본다."@ko .
+cc:Part a owl:Class ; rdfs:label "부품"@ko .
+cc:Valve a owl:Class ; rdfs:subClassOf cc:Part ; rdfs:label "밸브"@ko .
+cc:Oscillator a owl:Class ; rdfs:subClassOf cc:Part ; rdfs:label "진동장치"@ko .
+
+cc:Signal a owl:Class ; rdfs:label "신호"@ko ;
+    rdfs:comment "1시간 요약 표준화 점수를 만드는 센서 신호 종류 (몰드 레벨 진폭, 제어 지연, 인발 부하, 진동 스트로크)"@ko .
+cc:SignalReading a owl:Class ; rdfs:label "신호 관측값"@ko ;
+    rdfs:comment "한 신호의 한 시각 표준화 점수. 1을 넘으면 정상 시나리오의 95%보다 많이 벗어난 것"@ko .
+
+cc:Prediction a owl:Class ; rdfs:label "예측"@ko ;
+    rdfs:comment "24시간 안 고장 확률과 지금 열화 중일 확률"@ko .
+
+cc:Alarm a owl:Class ; rdfs:label "경보 단계"@ko .
+cc:CautionAlarm a owl:Class ; rdfs:subClassOf cc:Alarm ; rdfs:label "주의 (CAUTION)"@ko .
+cc:WarningAlarm a owl:Class ; rdfs:subClassOf cc:Alarm ; rdfs:label "경보 (WARNING)"@ko .
+cc:CautionAlarm owl:disjointWith cc:WarningAlarm .
+
+cc:MaintenanceDecision a owl:Class ; rdfs:label "정비 결정"@ko ;
+    rdfs:comment "경보가 켜진 설비에 대해 DSS가 고른 추천과 그 근거 (src/dss.py)"@ko .
+cc:MaintenanceOption a owl:Class ; rdfs:label "정비 선택지"@ko ;
+    rdfs:comment "지금 교체 / N시간 뒤 교체 / 다음 정기 교체 때 함께 교체"@ko .
+cc:SafetyRule a owl:Class ; rdfs:label "안전 규칙"@ko ;
+    rdfs:comment "정비가 끝나기 전 고장 확률이 기준을 넘는 선택지는 고르지 않는다 (비용보다 먼저)"@ko .
+cc:CostAssumption a owl:Class ; rdfs:label "비용 가정"@ko ;
+    rdfs:comment "데이터셋 점수 또는 현장 가정(만 원). 화면에서 바꿀 수 있는 가정값"@ko .
+
+cc:MaintenanceWork a owl:Class ; rdfs:label "정비 작업"@ko ;
+    rdfs:comment "정비 기록 (점검·부분 정비·정기 교체·고장 후 복구)"@ko .
+cc:MaintenancePlan a owl:Class ; rdfs:label "정기 교체 계획"@ko ;
+    rdfs:comment "calendar 표의 정기 교체 계획. 미리 안다고 본다"@ko .
+cc:Failure a owl:Class ; rdfs:label "고장"@ko ;
+    rdfs:comment "실제 고장 기록. 서비스에서는 사후에 기록된다"@ko .
+
+cc:Equipment owl:disjointWith cc:Part , cc:Signal .
+cc:Signal owl:disjointWith cc:Part .
+
+# ── 액션 (사람이 화면에서 한 일 → 다시 데이터로, src/actions.py) ──────────
+
+cc:Action a owl:Class ; rdfs:label "조치"@ko .
+cc:Approval a owl:Class ; rdfs:subClassOf cc:Action ; rdfs:label "승인"@ko ;
+    rdfs:comment "정비 책임자가 정비 결정을 승인 → 정비 작업으로"@ko .
+cc:Hold a owl:Class ; rdfs:subClassOf cc:Action ; rdfs:label "보류"@ko ;
+    rdfs:comment "정비 책임자가 정비 결정을 보류 → 다시 판단"@ko .
+cc:ApprovalRequest a owl:Class ; rdfs:subClassOf cc:Action ; rdfs:label "승인 요청"@ko ;
+    rdfs:comment "현장이 정비 결정을 정비 책임자에게 올림"@ko .
+cc:WorkStart a owl:Class ; rdfs:subClassOf cc:Action ; rdfs:label "작업 시작"@ko .
+cc:WorkDone a owl:Class ; rdfs:subClassOf cc:Action ; rdfs:label "작업 완료"@ko ;
+    rdfs:comment "완료하면 점검 결과 입력으로 이어진다"@ko .
+cc:PartOrder a owl:Class ; rdfs:subClassOf cc:Action ; rdfs:label "부품 발주"@ko .
+cc:InspectionResult a owl:Class ; rdfs:subClassOf cc:Action ; rdfs:label "점검 결과"@ko ;
+    rdfs:comment "현장이 점검으로 판단한 부품과 교체 뒤 확인된 원인 부품. 쌓이면 '점검으로 부품을 맞힐 확률'이 된다"@ko .
+cc:InspectionFeedback a owl:Class ; rdfs:label "점검 되먹임"@ko ;
+    rdfs:comment "점검 결과로 잰 원인 부품 맞힘 비율과 손익분기. 넘으면 교체 방법 추천이 '점검 후 한 부품'으로 바뀐다"@ko .
+cc:Approval owl:disjointWith cc:Hold .
+
+# ── 링크 (객체 속성) ───────────────────────────────────────────
+
+cc:hasPart a owl:ObjectProperty ; rdfs:label "가진다"@ko ;
+    rdfs:domain cc:Equipment ; rdfs:range cc:Part .
+cc:ofSignal a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:label "신호 종류"@ko ;
+    rdfs:domain cc:SignalReading ; rdfs:range cc:Signal .
+cc:observes a owl:ObjectProperty ; rdfs:label "관측한다"@ko ;
+    rdfs:domain cc:SignalReading ; rdfs:range cc:Equipment .
+cc:predictsFor a owl:ObjectProperty ; rdfs:label "대상"@ko ;
+    rdfs:domain cc:Prediction ; rdfs:range cc:Equipment .
+cc:basedOn a owl:ObjectProperty ; rdfs:label "근거 신호"@ko ;
+    rdfs:domain cc:Prediction ; rdfs:range cc:SignalReading .
+cc:triggeredBy a owl:ObjectProperty ; rdfs:label "근거 예측"@ko ;
+    rdfs:domain cc:Alarm ; rdfs:range cc:Prediction .
+cc:alarmOn a owl:ObjectProperty ; rdfs:label "켜진 설비"@ko ;
+    rdfs:domain cc:Alarm ; rdfs:range cc:Equipment .
+cc:requests a owl:ObjectProperty ; rdfs:label "요청한다"@ko ;
+    rdfs:domain cc:WarningAlarm ; rdfs:range cc:MaintenanceDecision .
+cc:considers a owl:ObjectProperty ; rdfs:label "비교한다"@ko ;
+    rdfs:domain cc:MaintenanceDecision ; rdfs:range cc:MaintenanceOption .
+cc:recommends a owl:ObjectProperty ; rdfs:subPropertyOf cc:considers ; rdfs:label "추천한다"@ko ;
+    rdfs:domain cc:MaintenanceDecision ; rdfs:range cc:MaintenanceOption .
+cc:checkedBy a owl:ObjectProperty ; rdfs:label "확인한 규칙"@ko ;
+    rdfs:domain cc:MaintenanceDecision ; rdfs:range cc:SafetyRule .
+cc:pricedBy a owl:ObjectProperty ; rdfs:label "비용 기준"@ko ;
+    rdfs:domain cc:MaintenanceDecision ; rdfs:range cc:CostAssumption .
+cc:joinsPlan a owl:ObjectProperty ; rdfs:label "함께하는 계획"@ko ;
+    rdfs:domain cc:MaintenanceOption ; rdfs:range cc:MaintenancePlan .
+cc:replaces a owl:ObjectProperty ; rdfs:label "교체한다"@ko ;
+    rdfs:range cc:Part .
+cc:plannedFor a owl:ObjectProperty ; rdfs:label "계획된 설비"@ko ;
+    rdfs:domain cc:MaintenancePlan ; rdfs:range cc:Equipment .
+cc:performedOn a owl:ObjectProperty ; rdfs:label "작업한 설비"@ko ;
+    rdfs:domain cc:MaintenanceWork ; rdfs:range cc:Equipment .
+cc:occurredOn a owl:ObjectProperty ; rdfs:label "고장 난 설비"@ko ;
+    rdfs:domain cc:Failure ; rdfs:range cc:Equipment .
+cc:causedBy a owl:ObjectProperty ; rdfs:label "원인 부품"@ko ;
+    rdfs:domain cc:Failure ; rdfs:range cc:Part .
+
+cc:actsOn a owl:ObjectProperty ; rdfs:label "대상 결정"@ko ;
+    rdfs:domain cc:Action ; rdfs:range cc:MaintenanceDecision .
+cc:actionOn a owl:ObjectProperty ; rdfs:label "대상 설비"@ko ;
+    rdfs:domain cc:Action ; rdfs:range cc:Equipment .
+cc:approvedOption a owl:ObjectProperty ; rdfs:label "승인한 선택지"@ko ;
+    rdfs:domain cc:Approval ; rdfs:range cc:MaintenanceOption .
+cc:orders a owl:ObjectProperty ; rdfs:label "발주한다"@ko ;
+    rdfs:domain cc:PartOrder ; rdfs:range cc:Part .
+cc:judgedPart a owl:ObjectProperty ; rdfs:label "점검 판단 부품"@ko ;
+    rdfs:domain cc:InspectionResult ; rdfs:range cc:Part .
+cc:confirmedPart a owl:ObjectProperty ; rdfs:label "확인된 원인 부품"@ko ;
+    rdfs:domain cc:InspectionResult ; rdfs:range cc:Part .
+
+# ── 값 (데이터 속성) ───────────────────────────────────────────
+
+cc:atHour a owl:DatatypeProperty ; rdfs:label "시각 (시나리오 시작 후 h)"@ko ; rdfs:range xsd:decimal .
+cc:endHour a owl:DatatypeProperty ; rdfs:label "끝난 시각 (h)"@ko ; rdfs:range xsd:decimal .
+cc:firstOnHour a owl:DatatypeProperty ; rdfs:label "처음 켜진 시각 (h)"@ko ;
+    rdfs:domain cc:Alarm ; rdfs:range xsd:decimal .
+cc:failureProb24h a owl:DatatypeProperty ; rdfs:label "24시간 안 고장 확률"@ko ;
+    rdfs:domain cc:Prediction ; rdfs:range xsd:decimal .
+cc:degradedProb a owl:DatatypeProperty ; rdfs:label "지금 열화 중일 확률"@ko ;
+    rdfs:domain cc:Prediction ; rdfs:range xsd:decimal .
+cc:threshold a owl:DatatypeProperty ; rdfs:label "기준"@ko ; rdfs:range xsd:decimal .
+cc:score a owl:DatatypeProperty ; rdfs:label "표준화 점수"@ko ;
+    rdfs:domain cc:SignalReading ; rdfs:range xsd:decimal .
+cc:expectedCost a owl:DatatypeProperty ; rdfs:label "기대 총비용"@ko ;
+    rdfs:domain cc:MaintenanceOption ; rdfs:range xsd:decimal .
+cc:failProbBeforeDone a owl:DatatypeProperty ; rdfs:label "정비 완료 전 고장 확률"@ko ;
+    rdfs:domain cc:MaintenanceOption ; rdfs:range xsd:decimal .
+cc:hoursUntilDone a owl:DatatypeProperty ; rdfs:label "정비 완료까지 (h)"@ko ;
+    rdfs:domain cc:MaintenanceOption ; rdfs:range xsd:decimal .
+cc:meetsSafety a owl:DatatypeProperty ; rdfs:label "안전 기준 충족"@ko ;
+    rdfs:domain cc:MaintenanceOption ; rdfs:range xsd:boolean .
+cc:priority a owl:DatatypeProperty ; rdfs:label "정비팀 배정 순위"@ko ;
+    rdfs:domain cc:MaintenanceDecision ; rdfs:range xsd:integer .
+cc:constraintNote a owl:DatatypeProperty ; rdfs:label "제약"@ko ;
+    rdfs:domain cc:MaintenanceDecision ; rdfs:range xsd:string .
+cc:rationale a owl:DatatypeProperty ; rdfs:label "근거"@ko ; rdfs:range xsd:string .
+cc:costUnit a owl:DatatypeProperty ; rdfs:label "비용 단위"@ko ;
+    rdfs:domain cc:CostAssumption ; rdfs:range xsd:string .
+cc:workType a owl:DatatypeProperty ; rdfs:label "정비 종류"@ko ;
+    rdfs:domain cc:MaintenanceWork ; rdfs:range xsd:string .
+cc:equipmentId a owl:DatatypeProperty ; rdfs:label "설비 ID"@ko ;
+    rdfs:domain cc:Equipment ; rdfs:range xsd:string .
+cc:scenarioId a owl:DatatypeProperty ; rdfs:label "시나리오 ID"@ko ;
+    rdfs:domain cc:Equipment ; rdfs:range xsd:string .
+
+cc:byRole a owl:DatatypeProperty ; rdfs:label "누가"@ko ; rdfs:domain cc:Action ; rdfs:range xsd:string .
+cc:note a owl:DatatypeProperty ; rdfs:label "메모"@ko ; rdfs:domain cc:Action ; rdfs:range xsd:string .
+cc:accuracy a owl:DatatypeProperty ; rdfs:label "원인 부품 맞힘 비율"@ko ;
+    rdfs:domain cc:InspectionFeedback ; rdfs:range xsd:decimal .
+cc:sampleSize a owl:DatatypeProperty ; rdfs:label "기록 수"@ko ;
+    rdfs:domain cc:InspectionFeedback ; rdfs:range xsd:integer .
+cc:onePartReady a owl:DatatypeProperty ; rdfs:label "점검 후 한 부품 추천"@ko ;
+    rdfs:domain cc:InspectionFeedback ; rdfs:range xsd:boolean .
+
+# ── 공통 개체 ──────────────────────────────────────────────────
+
+cc:MLD_AMP a cc:Signal ; rdfs:label "몰드 레벨 진폭"@ko .
+cc:CONTROL_DELAY a cc:Signal ; rdfs:label "제어 지연"@ko .
+cc:WDL a cc:Signal ; rdfs:label "인발 부하"@ko .
+cc:OSC_STK a cc:Signal ; rdfs:label "진동 스트로크"@ko .
+cc:SignalScore a cc:Signal ; rdfs:label "네 신호 평균"@ko .

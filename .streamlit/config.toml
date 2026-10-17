@@ -1,0 +1,66 @@
+# 대시보드 보안 설정 (reports/연주_조기경보_결과보고서.md 9절·부록 E)
+
+[client]
+# 오류가 나도 화면에 코드 위치·파일 경로·스택을 보여 주지 않는다 (정보 노출 방지). 자세한 내용은 서버 로그에만 남는다
+showErrorDetails = "none"
+# 보는 사람에게 개발자 메뉴(다시 실행·설정 등)를 숨긴다
+toolbarMode = "viewer"
+
+[server]
+headless = true
+# 다른 사이트에서 요청을 위조하지 못하게 (기본값이지만 명시)
+enableXsrfProtection = true
+enableCORS = true
+# 이 앱은 파일을 받지 않는다
+maxUploadSize = 1
+maxMessageSize = 50
+
+[browser]
+# 사용 통계를 외부로 보내지 않는다
+gatherUsageStats = false
+
+[runner]
+# 실패한 화면 갱신이 남지 않게
+fastReruns = true
+
+[theme]
+# 라이트·다크·시스템 설정 따르기: 화면 오른쪽 위 ⋮ → Settings에서 고른다 (기본: 시스템 설정 따르기, 2026-10-16)
+#   공통 글꼴·크기·모서리는 여기에, 색은 [theme.light]·[theme.dark]에 따로 둔다.
+#   (CSS로 배경만 바꾸면 버튼·라디오 글자가 배경과 겹쳐 안 보이고, Streamlit 버전이 바뀌면 깨진다 → 테마 설정으로만)
+font = "'Noto Sans KR':https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap"
+baseFontSize = 17
+headingFontSizes = ["2rem", "1.6rem", "1.3rem"]
+headingFontWeights = [800, 700, 650]
+baseRadius = "0.75rem"
+buttonRadius = "0.6rem"
+showWidgetBorder = true
+
+[theme.dark]
+primaryColor = "#3B82F6"            # 주 버튼·선택 (화면당 주 버튼 하나)
+backgroundColor = "#080F1C"
+secondaryBackgroundColor = "#101D30"  # 카드·입력칸·표 머리
+textColor = "#EDF4FF"
+borderColor = "#263850"
+linkColor = "#60A5FA"
+redColor = "#FF667A"                # 경보·즉시 조치
+orangeColor = "#F7B955"             # 주의
+greenColor = "#2DD4A0"              # 정상·충족
+blueColor = "#60A5FA"
+violetColor = "#A78BFA"
+grayColor = "#9AAFCB"
+dataframeHeaderBackgroundColor = "#16263D"
+
+[theme.light]
+primaryColor = "#2563EB"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#F3F6FB"
+textColor = "#0F172A"
+borderColor = "#D5DEEA"
+linkColor = "#2563EB"
+redColor = "#DC2626"
+orangeColor = "#D97706"
+greenColor = "#059669"
+blueColor = "#2563EB"
+violetColor = "#7C3AED"
+grayColor = "#64748B"
+dataframeHeaderBackgroundColor = "#EEF2F8"

@@ -1,0 +1,13 @@
+# 확인한 환경: Python 3.14 (2026-10-15)
+# 모델 파일(models/risk24.joblib)은 만든 scikit-learn 버전에서만 같은 결과를 보장한다.
+# 버전을 바꾸면 python analysis/05_predict_test.py 로 모델을 다시 만들고 python tests/check_regression.py 로 확인한다.
+pandas==3.0.5
+numpy==2.5.1
+pyarrow==25.0.1
+scikit-learn==1.9.0
+joblib==1.5.3
+matplotlib==3.11.1
+streamlit==1.65.0     # 대시보드만
+altair==6.3.0         # 대시보드만
+tornado==6.5.9        # 대시보드 웹 서버(Streamlit이 씀). 6.5.7에 알려진 취약점 6건(pip-audit, 2026-10-15) → 수정 버전 고정
+rdflib==7.6.0         # 온톨로지 (OWL/RDF, SPARQL). BSD 라이선스
